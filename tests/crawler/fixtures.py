@@ -1,5 +1,3 @@
-import asyncio
-
 import pytest
 from src.crawler import GitHubCrawler
 
@@ -7,6 +5,6 @@ from src.crawler import GitHubCrawler
 @pytest.fixture
 def crawler():
     keywords = ['python', 'ai']
-    proxy_file = 'path_to_proxy_file'
+    proxies = ['http://127.0.0.1:1080', 'http://127.0.0.1:1000']
     search_type = 'repositories'
-    return GitHubCrawler(keywords, proxy_file, search_type)
+    return GitHubCrawler(keywords, proxies, search_type)
