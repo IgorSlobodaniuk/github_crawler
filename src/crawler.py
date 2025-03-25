@@ -1,17 +1,19 @@
+import random
+
 import aiohttp
 import asyncio
 import logging
 from bs4 import BeautifulSoup
-from urllib.parse import urlencode, urlparse
-from typing import List, Dict, Optional
+from urllib.parse import urlencode, urlparse, urljoin
+from typing import List, Dict, Optional, Any
 
-from src.utils import get_random_proxy, get_random_headers, load_proxies
+from src.utils import get_random_proxy, get_random_headers
 
-BASE_URL = 'https://github.com/search'
+BASE_URL = 'https://github.com'
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 class GitHubCrawler:
     """
@@ -26,17 +28,17 @@ class GitHubCrawler:
     Methods:
         run() -> List[Dict]: Starts the crawling process and returns a list of repositories with details.
     """
-    def __init__(self, keywords: List[str], proxy_file: str, search_type: str) -> None:
+    def __init__(self, keywords: List[str], proxies: list, search_type: str) -> None:
         """
         Initializes the GitHubCrawler instance.
 
         Args:
             keywords (List[str]): The list of keywords to search for.
-            proxy_file (str): The file path containing proxies to use.
+            proxies (List[str]): A list of proxy URLs to be used for requests.
             search_type (str): The search type (e.g., 'repositories').
         """
         self.keywords = keywords
-        self.proxies = load_proxies(proxy_file)
+        self.proxies = proxies
         self.search_type = search_type
         self.session: Optional[aiohttp.ClientSession] = None
 
@@ -48,7 +50,7 @@ class GitHubCrawler:
             str: The complete search URL.
         """
         query_params = {'q': ' '.join(self.keywords), 'type': self.search_type}
-        return f'{BASE_URL}?{urlencode(query_params)}'
+        return urljoin(BASE_URL, f'/search?{urlencode(query_params)}')
 
     async def _fetch(self, url: str) -> Optional[str]:
         """
@@ -72,11 +74,11 @@ class GitHubCrawler:
                     return await response.text()
 
             except aiohttp.ClientError as e:
-                logger.error(f'Attempt {attempt + 1} failed for {url}: {e}')
+                logger.error(f'Attempt {attempt + 1} failed for {url}: {str(e)}')
                 if attempt == retries - 1:
-                    logger.error(f"All attempts failed for {url}")
-                    return None
-                await asyncio.sleep(2)
+                    return
+
+                await asyncio.sleep(random.randint(1, 3))
 
     def _parse_search_results(self, html: str) -> List[Dict[str, str]]:
         """
@@ -92,7 +94,7 @@ class GitHubCrawler:
         soup = BeautifulSoup(html, 'html.parser')
         results = []
         for link in soup.select("div[data-testid='results-list'] [class~='search-title'] a"):
-            results.append({'url': f'https://github.com{link["href"]}'})
+            results.append({'url': urljoin(BASE_URL, link["href"])})
         logger.info(f"Found {len(results)} repositories")
         return results
 
@@ -122,7 +124,7 @@ class GitHubCrawler:
         logger.info(f"Parsed language stats: {language_stats}")
         return language_stats
 
-    async def _get_repo_details(self, repo: Dict[str, str]) -> Dict[str, str]:
+    async def _get_repo_details(self, repo: Dict[str, Any]) -> Dict[str, Any]:
         """
         Fetches additional details for a repository, such as the owner and language statistics.
 
