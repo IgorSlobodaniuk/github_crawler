@@ -36,7 +36,14 @@ You can customize the crawler by modifying the `Crawler` class parameters:
 ## Testing
 The project includes unit tests using `pytest`.
 
+### Install Dev Dependencies
+```sh
+pip install -r dev-requirements.txt
+```
+
 ### Run Tests
+
+
 ```sh
 pytest tests/
 ```
