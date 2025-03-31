@@ -3,7 +3,7 @@ from unittest.mock import patch
 pytest_plugins = ['tests.crawler.fixtures']
 
 
-@patch('src.crawler.BeautifulSoup')
+@patch('crawler.crawler.BeautifulSoup')
 def test_get_next_page_url_exists(mock_beautiful_soup, crawler):
     html = """
     <html>
@@ -20,7 +20,7 @@ def test_get_next_page_url_exists(mock_beautiful_soup, crawler):
     assert next_page_url == '/search?page=2'
 
 
-@patch('src.crawler.BeautifulSoup')
+@patch('crawler.crawler.BeautifulSoup')
 def test_get_next_page_url_no_next(mock_beautiful_soup, crawler):
     html = """
     <html>

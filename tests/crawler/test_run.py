@@ -1,11 +1,11 @@
 import pytest
 from unittest.mock import patch, AsyncMock, Mock
-from src.crawler import GitHubCrawler
+from crawler.crawler import GitHubCrawler
 
 pytest_plugins = ['tests.crawler.fixtures']
 
 @pytest.mark.asyncio
-@patch.object(GitHubCrawler, '_get_search_url', return_value='https://github.com/search?q=python+ai&type=repositories')
+@patch.object(GitHubCrawler, '_get_search_url', return_value=('https://github.com/search', {'q': 'python ai', 'type': 'repositories'}))
 @patch.object(GitHubCrawler, '_fetch', new_callable=AsyncMock)
 @patch.object(GitHubCrawler, '_get_repo_details', new_callable=AsyncMock)
 @patch.object(GitHubCrawler, '_parse_search_results', return_value=(Mock, Mock))
@@ -35,20 +35,20 @@ async def test_run_success(mock_get_next_page_url, mock_parse_search_results, mo
     assert mock_get_repo_details.call_count == 2
 
     mock_get_search_url.assert_called_once()
-    mock_fetch.assert_called_once_with('https://github.com/search?q=python+ai&type=repositories')
+    mock_fetch.assert_called_once_with('https://github.com/search', {'q': 'python ai', 'type': 'repositories'})
     mock_parse_search_results.assert_called_once()
     mock_get_next_page_url.assert_called_once()
 
 
 
 @pytest.mark.asyncio
-@patch.object(GitHubCrawler, '_get_search_url', return_value='https://github.com/search?q=python+ai&type=repositories')
+@patch.object(GitHubCrawler, '_get_search_url', return_value=('https://github.com/search', {'q': 'python ai', 'type': 'repositories'}))
 @patch.object(GitHubCrawler, '_fetch', new_callable=AsyncMock, return_value=None)
 async def test_run_with_no_html(mock_fetch, mock_get_search_url, crawler):
 
     result = await crawler.run()
 
-    mock_fetch.assert_called_once_with('https://github.com/search?q=python+ai&type=repositories')
+    mock_fetch.assert_called_once_with('https://github.com/search', {'q': 'python ai', 'type': 'repositories'})
     mock_get_search_url.assert_called_once()
 
     assert result == []

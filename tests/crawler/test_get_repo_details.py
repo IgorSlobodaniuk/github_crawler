@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch, AsyncMock
-from src.crawler import GitHubCrawler
+from crawler.crawler import GitHubCrawler
 
 pytest_plugins = ['tests.crawler.fixtures']
 
@@ -34,7 +34,7 @@ async def test_get_repo_details_success(mock_parse_language_stats, mock_fetch, c
         'owner': 'user',
         'language_stats': {'Python': 80.0, 'JavaScript': 20.0}
     }
-    mock_fetch.assert_called_once_with('https://github.com/user/repo1')
+    mock_fetch.assert_called_once_with('https://github.com/user/repo1', query_params={})
     mock_parse_language_stats.assert_called_once_with(html)
 
 
@@ -46,7 +46,7 @@ async def test_get_repo_details_fetch_failure(mock_parse_language_stats, mock_fe
     mock_fetch.return_value = None
     repo_details = await crawler._get_repo_details(repo_data)
     assert 'extra' not in repo_details
-    mock_fetch.assert_called_once_with('https://github.com/user/repo1')
+    mock_fetch.assert_called_once_with('https://github.com/user/repo1', query_params={})
     mock_parse_language_stats.assert_not_called()
 
 
@@ -75,5 +75,5 @@ async def test_get_repo_details_partial_language_stats(mock_parse_language_stats
         'owner': 'user',
         'language_stats': {'Python': 90.0}
     }
-    mock_fetch.assert_called_once_with('https://github.com/user/repo1')
+    mock_fetch.assert_called_once_with('https://github.com/user/repo1', query_params={})
     mock_parse_language_stats.assert_called_once_with(html)

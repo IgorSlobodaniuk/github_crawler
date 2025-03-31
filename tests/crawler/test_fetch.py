@@ -17,7 +17,7 @@ async def test_fetch_success(crawler):
 
     async with aiohttp.ClientSession() as session:
         crawler.session = session
-        result = await crawler._fetch(url)
+        result = await crawler._fetch(url, {})
 
     assert result == '{"result": "success"}'
 
@@ -31,7 +31,7 @@ async def test_fetch_client_error(crawler):
 
     async with aiohttp.ClientSession() as session:
         crawler.session = session
-        result = await crawler._fetch(url)
+        result = await crawler._fetch(url, {})
         assert result is None
 
 
@@ -45,7 +45,7 @@ async def test_fetch_retries_on_failure(crawler):
 
     async with aiohttp.ClientSession() as session:
         crawler.session = session
-        result = await crawler._fetch(url)
+        result = await crawler._fetch(url, {})
     assert result == '{"result": "success"}'
 
 
@@ -58,7 +58,7 @@ async def test_fetch_exceed_retries(crawler):
 
     async with aiohttp.ClientSession() as session:
         crawler.session = session
-        result = await crawler._fetch(url)
+        result = await crawler._fetch(url, {})
     assert result is None
 
 
@@ -73,7 +73,7 @@ async def test_fetch_with_proxy_and_headers(crawler):
     async with aiohttp.ClientSession() as session:
         crawler.session = session
         crawler.proxies = ['http://proxy1.com']
-        result = await crawler._fetch(url)
+        result = await crawler._fetch(url, {})
     assert result == '{"result": "success"}'
 
 
@@ -88,5 +88,5 @@ async def test_fetch_client_error_handling(crawler):
     async with aiohttp.ClientSession() as session:
         crawler.session = session
         crawler.proxies = ['http://proxy1.com']
-        result = await crawler._fetch(url)
+        result = await crawler._fetch(url, {})
     assert result is None

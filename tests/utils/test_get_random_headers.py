@@ -1,4 +1,4 @@
-from src.utils import get_random_headers
+from crawler.utils import get_random_headers
 
 
 def test_get_random_headers():
