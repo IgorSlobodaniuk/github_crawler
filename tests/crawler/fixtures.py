@@ -1,5 +1,5 @@
 import pytest
-from src.crawler import GitHubCrawler
+from crawler.crawler import GitHubCrawler
 
 
 @pytest.fixture
