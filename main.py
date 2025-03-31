@@ -4,15 +4,15 @@ from typing import List, Optional, Literal
 
 from pydantic import BaseModel
 
-from src.crawler import GitHubCrawler
-from src.utils import load_proxies
+from crawler.crawler import GitHubCrawler
+from crawler.utils import get_random_proxy
 
 PROXY_PATH = 'proxylist.txt'
 
 
 class SearchFilterModel(BaseModel):
     keywords: List[str]
-    proxies: Optional[List[str]] = None
+    proxy: Optional[str] = None
     search_type: Literal['repositories', 'issues', 'wikis']
 
 
@@ -22,13 +22,13 @@ async def main():
     input_data = {
         'keywords': [kw.strip() for kw in keywords],
         'search_type': search_type,
-        'proxies': load_proxies(PROXY_PATH)
+        'proxy': get_random_proxy(PROXY_PATH)
     }
 
     validated_data = SearchFilterModel(**input_data)
     crawler = GitHubCrawler(
         keywords=validated_data.keywords,
-        proxies=validated_data.proxies,
+        proxy=validated_data.proxy,
         search_type=validated_data.search_type
     )
     results = await crawler.run()

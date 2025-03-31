@@ -4,19 +4,15 @@ from fake_useragent import UserAgent
 ua = UserAgent(browsers=['Edge', 'Chrome'])
 
 
-def load_proxies(proxy_file):
-    """Load proxies from proxylist.txt"""
+def get_random_proxy(proxy_file):
+    """Load proxies from proxylist.txt and return a random one"""
     try:
         with open(proxy_file, 'r') as file:
-            return [line.strip() for line in file if line.strip()]
+            proxies = [line.strip() for line in file if line.strip()]
+            return random.choice(proxies) if proxies else None
     except FileNotFoundError:
         print("Proxy file not found. Proceeding without proxies.")
         return []
-
-
-def get_random_proxy(proxies):
-    """Retrieve a random proxy from the list."""
-    return f'http://{random.choice(proxies)}' if proxies else None
 
 
 def get_random_headers():
