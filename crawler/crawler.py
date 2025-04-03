@@ -10,6 +10,9 @@ from typing import List, Dict, Optional, Any, Tuple
 from crawler.utils import get_random_headers
 
 BASE_URL = 'https://github.com'
+NUMBER_OF_RETRIES = 3
+RANGE_FROM = 1
+RANGE_TO = 3
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -50,7 +53,7 @@ class GitHubCrawler:
             tuple: The search URL and query parameters.
         """
         query_params = {'q': ' '.join(self.keywords), 'type': self.search_type}
-        return urljoin(BASE_URL, f'/search'), query_params
+        return urljoin(BASE_URL, '/search'), query_params
 
     async def _fetch(self, url: str, query_params: Dict[str, str]) -> Optional[str]:
         """
@@ -62,22 +65,21 @@ class GitHubCrawler:
         Returns:
             Optional[str]: The HTML content if successful, or None if failed after retries.
         """
-        retries = 3
-        for attempt in range(retries):
+        for attempt in range(NUMBER_OF_RETRIES):
             headers = get_random_headers()
             try:
-                logger.info(f"Attempting to fetch {url} with proxy {self.proxy} (Attempt {attempt + 1})")
-                async with self.session.get(url, query_params=query_params, headers=headers, timeout=5, proxy=self.proxy) as response:
+                logger.info('Attempting to fetch %s with proxy %s (Attempt %d)', url, self.proxy, attempt + 1)
+                async with self.session.get(url, params=query_params, headers=headers, timeout=5, proxy=self.proxy) as response:
                     response.raise_for_status()
-                    logger.info(f"Successfully fetched {url}")
+                    logger.info('Successfully fetched %s', url)
                     return await response.text()
 
             except aiohttp.ClientError as e:
-                logger.error(f'Attempt {attempt + 1} failed for {url}: {str(e)}')
-                if attempt == retries - 1:
+                logger.error('Attempt %d failed for %s: %s', attempt + 1, url, str(e))
+                if attempt == NUMBER_OF_RETRIES - 1:
                     return
 
-                await asyncio.sleep(random.randint(1, 3))
+                await asyncio.sleep(random.randint(RANGE_FROM, RANGE_TO))
 
     def _parse_search_results(self, html: str) -> List[Dict[str, str]]:
         """
@@ -89,15 +91,16 @@ class GitHubCrawler:
         Returns:
             List[Dict[str, str]]: A list of dictionaries containing repository URLs.
         """
-        logger.info("Parsing search results...")
+        logger.info('Parsing search results...')
         soup = BeautifulSoup(html, 'html.parser')
         results = []
         for link in soup.select("div[data-testid='results-list'] [class~='search-title'] a"):
-            results.append({'url': urljoin(BASE_URL, link["href"])})
-        logger.info(f"Found {len(results)} repositories")
+            results.append({'url': urljoin(BASE_URL, link['href'])})
+        logger.info('Found %d repositories', len(results))
         return results
 
     def _parse_language_stats(self, html: str) -> Dict[str, float]:
+        logger.info('Parsing language stats...')
         """
         Parses the language statistics from the repository details page.
 
@@ -112,7 +115,7 @@ class GitHubCrawler:
         soup = BeautifulSoup(html, 'html.parser')
         h2 = soup.find('h2', string='Languages')
         if not h2:
-            logger.info("No language stats found")
+            logger.info('No language stats found')
             return {}
 
         languages_container = h2.find_next('ul').select('a.d-inline-flex')
@@ -120,7 +123,7 @@ class GitHubCrawler:
             lang_name = language_container.select_one('span').get_text(strip=True)
             lang_percent = language_container.select_one('span + span').get_text(strip=True).strip('%')
             language_stats[lang_name] = float(lang_percent)
-        logger.info(f"Parsed language stats: {language_stats}")
+        logger.info('Parsed language stats: %s', language_stats)
         return language_stats
 
     async def _get_repo_details(self, repo: Dict[str, Any]) -> Dict[str, Any]:
@@ -133,14 +136,14 @@ class GitHubCrawler:
         Returns:
             Dict[str, str]: A dictionary containing repository details with extra information.
         """
-        logger.info(f"Fetching details for repo: {repo['url']}")
+        logger.info('Fetching details for repo: %s', repo['url'])
         html = await self._fetch(repo['url'], query_params={})
         if html:
             repo['extra'] = {
-                'owner':  urlparse(repo['url']).path.split('/')[1],
+                'owner': urlparse(repo['url']).path.split('/')[1],
                 'language_stats': self._parse_language_stats(html)
             }
-            logger.info(f"Fetched details for repo: {repo['url']}")
+            logger.info('Fetched details for repo: %s', repo['url'])
         return repo
 
     def _get_next_page_url(self, html: str) -> Optional[str]:
@@ -164,16 +167,16 @@ class GitHubCrawler:
         Returns:
             List[Dict[str, str]]: A list of repositories with their details (URLs, owners, language stats, etc.).
         """
-        logger.info("Starting GitHub crawling process")
+        logger.info('Starting GitHub crawling process')
         search_url, query_params = self._get_search_url()
         all_repos: List[Dict[str, str]] = []
         async with aiohttp.ClientSession() as session:
             self.session = session
             while search_url:
-                logger.info(f"Fetching page: {search_url}")
+                logger.info('Fetching page: %s', search_url)
                 html = await self._fetch(search_url, query_params)
                 if not html:
-                    logger.error(f"Failed to fetch page: {search_url}")
+                    logger.error('Failed to fetch page: %s', search_url)
                     break
 
                 repos = self._parse_search_results(html)
@@ -181,5 +184,5 @@ class GitHubCrawler:
                 all_repos.extend(repo_details)
                 search_url = self._get_next_page_url(html)
                 query_params = {}
-        logger.info(f"Finished crawling. Found {len(all_repos)} repositories.")
+        logger.info('Finished crawling. Found %d repositories.', len(all_repos))
         return all_repos

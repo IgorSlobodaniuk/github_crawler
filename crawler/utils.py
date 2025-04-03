@@ -1,7 +1,11 @@
 import random
+import logging
 from fake_useragent import UserAgent
 
 ua = UserAgent(browsers=['Edge', 'Chrome'])
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def get_random_proxy(proxy_file):
@@ -11,7 +15,7 @@ def get_random_proxy(proxy_file):
             proxies = [line.strip() for line in file if line.strip()]
             return random.choice(proxies) if proxies else None
     except FileNotFoundError:
-        print("Proxy file not found. Proceeding without proxies.")
+        logger.warning('Proxy file not found. Proceeding without proxies.')
         return []
 
 
