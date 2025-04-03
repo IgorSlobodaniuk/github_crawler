@@ -15,3 +15,9 @@ def test_load_proxies(file_content, expected_results, tmpdir):
     result = get_random_proxy(str(proxy_file))
     expected_results = expected_results or [None]
     assert result in expected_results
+
+
+def test_load_proxies_file_not_found():
+    """Test behavior when proxy file is missing."""
+    result = get_random_proxy("non_existent_file.txt")
+    assert result == []
